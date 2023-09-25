@@ -44,7 +44,12 @@ impl ModInt {
 impl ops::Add for ModInt {
     type Output = ModInt;
     fn add(self, other: Self) -> Self {
-        ModInt::new(self.val + other.val)
+        let res = self.val + other.val;
+        if res < MOD {
+            ModInt { val: res }
+        } else {
+            ModInt { val: res - MOD }
+        }
     }
 }
 
