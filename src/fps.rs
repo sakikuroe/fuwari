@@ -26,8 +26,8 @@ impl FPS {
     }
 
     pub fn set(&mut self, n: usize, a: ModInt) {
-        if self.len() < n {
-            self.coeff.resize(n, ModInt::new(0));
+        if self.len() < n + 1 {
+            self.coeff.resize(n + 1, ModInt::new(0));
         }
         self.coeff[n] = a;
     }
@@ -72,15 +72,18 @@ impl ops::SubAssign for FPS {
 impl fmt::Display for FPS {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.is_empty() {
-            write!(f, "0x^0")?;
+            write!(f, "0x^0")
         } else {
-            for i in 0..self.coeff.len() {
-                write!(f, "{}x^{} ", self.coeff[i], i)?;
-                if i + 1 != self.coeff.len() {
-                    write!(f, "+ ")?;
-                }
-            }
+            write!(
+                f,
+                "{}",
+                self.coeff
+                    .iter()
+                    .enumerate()
+                    .map(|(n, a)| format!("{}x^{}", a, n))
+                    .collect::<Vec<_>>()
+                    .join(" + ")
+            )
         }
-        Ok(())
     }
 }
