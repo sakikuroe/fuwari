@@ -1,4 +1,4 @@
-use crate::modint::ModInt;
+use crate::{convolution::conv, modint::ModInt};
 use std::{fmt, ops};
 
 /// fps![]
@@ -35,7 +35,7 @@ macro_rules! sfps {
 
 #[derive(Clone)]
 pub struct FPS {
-    coeff: Vec<ModInt>,
+    pub coeff: Vec<ModInt>,
 }
 
 impl FPS {
@@ -89,6 +89,13 @@ impl ops::Sub for FPS {
     }
 }
 
+impl ops::Mul for FPS {
+    type Output = FPS;
+    fn mul(self, other: Self) -> Self {
+        FPS::new(conv(&self.coeff, &other.coeff))
+    }
+}
+
 impl ops::AddAssign for FPS {
     fn add_assign(&mut self, other: Self) {
         *self = self.clone() + other;
@@ -98,6 +105,12 @@ impl ops::AddAssign for FPS {
 impl ops::SubAssign for FPS {
     fn sub_assign(&mut self, other: Self) {
         *self = self.clone() - other;
+    }
+}
+
+impl ops::MulAssign for FPS {
+    fn mul_assign(&mut self, other: Self) {
+        *self = self.clone() * other;
     }
 }
 
