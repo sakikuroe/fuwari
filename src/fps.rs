@@ -48,18 +48,18 @@ impl FPS {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.coeff.iter().all(|&c| c == ModInt::new(0))
+        self.coeff.iter().all(|&c| c == ModInt { val: 0 })
     }
 
     /// # Returns
     /// $[x^{n}] f$
     pub fn get(&self, n: usize) -> ModInt {
-        *self.coeff.get(n).unwrap_or(&ModInt::new(0))
+        *self.coeff.get(n).unwrap_or(&ModInt { val: 0 })
     }
 
     pub fn set(&mut self, n: usize, a: ModInt) {
         if self.len() < n + 1 {
-            self.coeff.resize(n + 1, ModInt::new(0));
+            self.coeff.resize(n + 1, ModInt { val: 0 });
         }
         self.coeff[n] = a;
     }
@@ -67,9 +67,63 @@ impl FPS {
     /// Discard $[x^{n}]_{n \geq \mathrm{len}}$.
     pub fn truncate(&mut self, len: usize) {
         self.coeff.truncate(len);
-        while self.coeff.last() == Some(&ModInt::new(0)) {
+        while self.coeff.last() == Some(&ModInt { val: 0 }) {
             self.coeff.pop();
         }
+    }
+
+    pub fn shift_left(&mut self, n: usize) {
+        self.coeff.rotate_left(n);
+        self.truncate(self.len() - n);
+    }
+
+    pub fn shift_right(&mut self, n: usize) {
+        self.coeff.rotate_right(n);
+        self.truncate(self.len() - n);
+    }
+
+    pub fn split(&self, n: usize) -> (Self, Self) {
+        if self.len() < n {
+            (self.clone(), FPS::new(vec![]))
+        } else {
+            (
+                FPS::new(self.coeff[..n].to_vec()),
+                FPS::new(self.coeff[n..].to_vec()),
+            )
+        }
+    }
+
+    pub fn inv(&self, len: usize) -> Self {
+        assert_ne!(self.get(0), ModInt { val: 0 });
+
+        let mut g = FPS::new(vec![self.get(0).inv()]);
+
+        let mut d = 1;
+        loop {
+            if d >= len {
+                break;
+            }
+
+            let mut f = self.clone();
+            f.truncate(2 * d);
+            let h = {
+                let (mut f1, mut f2) = f.split(d);
+                f1 *= g.clone();
+                f1.shift_left(d);
+                f2 *= g.clone();
+                f2.truncate(d);
+                f1 + f2
+            };
+            let hg = h * g.clone();
+            for i in 0..d {
+                g.set(d + i, -hg.get(i));
+            }
+
+            d *= 2;
+        }
+
+        g.truncate(len);
+        g
     }
 }
 
@@ -93,6 +147,13 @@ impl ops::Mul for FPS {
     type Output = FPS;
     fn mul(self, other: Self) -> Self {
         FPS::new(conv(&self.coeff, &other.coeff))
+    }
+}
+
+impl ops::Neg for FPS {
+    type Output = FPS;
+    fn neg(self) -> Self {
+        FPS::new(vec![]) - self
     }
 }
 
