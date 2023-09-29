@@ -12,7 +12,7 @@ const FFT_IRATE: [usize; 22] = [
     0x7392943, 0x24433aa8, 0x1a2993eb, 0x156d2fbf, 0x311e570f, 0x6294a13,
 ];
 
-pub fn conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
+pub fn ntt_conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
     let ntt = |a: &mut Vec<ModInt>| {
         let n = a.len();
         let h = n.trailing_zeros();
@@ -77,4 +77,25 @@ pub fn conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
     let t_inv = ModInt { val: t }.inv();
     a.iter_mut().for_each(|x| *x *= t_inv);
     a
+}
+
+pub fn naive_conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
+    let mut res = vec![ModInt { val: 0 }; a.len() + b.len() - 1];
+    for (i, y) in a.iter().enumerate() {
+        res.iter_mut()
+            .skip(i)
+            .take(b.len())
+            .zip(b.iter())
+            .for_each(|(x, z)| *x += *y * *z);
+    }
+
+    res
+}
+
+pub fn conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
+    if a.len().min(b.len()) <= 30 {
+        naive_conv(a, b)
+    } else {
+        ntt_conv(a, b)
+    }
 }
