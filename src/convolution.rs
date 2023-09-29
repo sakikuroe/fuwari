@@ -93,7 +93,7 @@ pub fn naive_conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
 }
 
 pub fn conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
-    if a.len().min(b.len()) <= 30 {
+    if a.len().min(b.len()) <= 60 {
         naive_conv(a, b)
     } else {
         ntt_conv(a, b)
