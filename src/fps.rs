@@ -1,6 +1,38 @@
 use crate::modint::ModInt;
 use std::{fmt, ops};
 
+/// fps![]
+#[macro_export]
+macro_rules! fps {
+    { $( $x:expr ),* } => {
+        {
+            use fuwari::fps::FPS;
+            use fuwari::modint::ModInt;
+            let mut coeff = vec![];
+            $(
+                 coeff.push(ModInt {val: $x as usize});
+            )*
+            FPS::new(coeff)
+        }
+    };
+}
+
+/// sfps!()
+#[macro_export]
+macro_rules! sfps {
+    { $( ($n:expr, $a:expr) ),* } => {
+        {
+            use fuwari::fps::FPS;
+            use fuwari::modint::ModInt;
+            let mut f = FPS::new(vec![]);
+            $(
+                f.set($n as usize, ModInt {val: $a as usize});
+            )*
+            f
+        }
+    };
+}
+
 #[derive(Clone)]
 pub struct FPS {
     coeff: Vec<ModInt>,

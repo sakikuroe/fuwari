@@ -4,7 +4,7 @@ const MOD: usize = 998244353; // 119 * (1 << 23) + 1
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ModInt {
-    val: usize,
+    pub val: usize,
 }
 
 impl ModInt {
