@@ -1,4 +1,7 @@
-use crate::{convolution::conv, modint::ModInt};
+use crate::{
+    convolution::{conv, intt, ntt},
+    modint::ModInt,
+};
 use std::{fmt, ops};
 
 /// fps![]
@@ -33,7 +36,7 @@ macro_rules! sfps {
     };
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct FPS {
     pub coeff: Vec<ModInt>,
 }
@@ -106,18 +109,18 @@ impl FPS {
 
             let mut f = self.clone();
             f.truncate(2 * d);
-            let h = {
-                let (mut f1, mut f2) = f.split(d);
-                f1 *= g.clone();
-                f1.shift_left(d);
-                f2 *= g.clone();
-                f2.truncate(d);
-                f1 + f2
-            };
-            let hg = h * g.clone();
-            for i in 0..d {
-                g.set(d + i, -hg.get(i));
-            }
+            f.coeff.resize(4 * d, ModInt { val: 0 });
+            g.coeff.resize(4 * d, ModInt { val: 0 });
+            ntt(&mut f.coeff);
+            ntt(&mut g.coeff);
+            g.coeff
+                .iter_mut()
+                .zip(f.coeff.iter())
+                .for_each(|(g, f)| *g *= -*f * *g + ModInt { val: 2 });
+            intt(&mut g.coeff);
+            g.truncate(2 * d);
+            let four_d_inv = ModInt { val: 4 * d }.inv();
+            g.coeff.iter_mut().for_each(|x| *x *= four_d_inv);
 
             d *= 2;
         }

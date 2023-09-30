@@ -12,57 +12,59 @@ const FFT_IRATE: [usize; 22] = [
     0x7392943, 0x24433aa8, 0x1a2993eb, 0x156d2fbf, 0x311e570f, 0x6294a13,
 ];
 
+pub fn ntt(a: &mut Vec<ModInt>) {
+    let n = a.len();
+    let h = n.trailing_zeros();
+    assert_eq!(1 << h, n);
+
+    for len in 0..h {
+        let p = 1 << (h - len - 1);
+        let mut rot = ModInt { val: 1 };
+        for (s, (al, ar)) in a
+            .chunks_mut(1 << (h - len))
+            .map(|a| a.split_at_mut(p))
+            .enumerate()
+        {
+            for (al, ar) in al.iter_mut().zip(ar.iter_mut()) {
+                let l = *al;
+                let r = *ar * rot;
+                *al = l + r;
+                *ar = l - r;
+            }
+            rot *= ModInt {
+                val: FFT_RATE[(!s).trailing_zeros() as usize],
+            };
+        }
+    }
+}
+
+pub fn intt(a: &mut Vec<ModInt>) {
+    let n = a.len();
+    let h = n.trailing_zeros();
+    assert_eq!(1 << h, n);
+
+    for len in (1..=h).rev() {
+        let p = 1 << (h - len);
+        let mut irot = ModInt { val: 1 };
+        for (s, (al, ar)) in a
+            .chunks_mut(1 << (h - len + 1))
+            .map(|a| a.split_at_mut(p))
+            .enumerate()
+        {
+            for (al, ar) in al.iter_mut().zip(ar.iter_mut()) {
+                let l = *al;
+                let r = *ar;
+                *al = l + r;
+                *ar = (l - r) * irot;
+            }
+            irot *= ModInt {
+                val: FFT_IRATE[(!s).trailing_zeros() as usize],
+            };
+        }
+    }
+}
+
 pub fn ntt_conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
-    let ntt = |a: &mut Vec<ModInt>| {
-        let n = a.len();
-        let h = n.trailing_zeros();
-
-        for len in 0..h {
-            let p = 1 << (h - len - 1);
-            let mut rot = ModInt { val: 1 };
-            for (s, (al, ar)) in a
-                .chunks_mut(1 << (h - len))
-                .map(|a| a.split_at_mut(p))
-                .enumerate()
-            {
-                for (al, ar) in al.iter_mut().zip(ar.iter_mut()) {
-                    let l = *al;
-                    let r = *ar * rot;
-                    *al = l + r;
-                    *ar = l - r;
-                }
-                rot *= ModInt {
-                    val: FFT_RATE[(!s).trailing_zeros() as usize],
-                };
-            }
-        }
-    };
-
-    let intt = |a: &mut Vec<ModInt>| {
-        let n = a.len();
-        let h = n.trailing_zeros();
-
-        for len in (1..=h).rev() {
-            let p = 1 << (h - len);
-            let mut irot = ModInt { val: 1 };
-            for (s, (al, ar)) in a
-                .chunks_mut(1 << (h - len + 1))
-                .map(|a| a.split_at_mut(p))
-                .enumerate()
-            {
-                for (al, ar) in al.iter_mut().zip(ar.iter_mut()) {
-                    let l = *al;
-                    let r = *ar;
-                    *al = l + r;
-                    *ar = (l - r) * irot;
-                }
-                irot *= ModInt {
-                    val: FFT_IRATE[(!s).trailing_zeros() as usize],
-                };
-            }
-        }
-    };
-
     let s = a.len() + b.len() - 1;
     let t = s.next_power_of_two();
 
