@@ -1,6 +1,6 @@
 use std::{fmt, ops};
 
-const MOD: usize = 998244353; // 119 * (1 << 23) + 1
+pub const MOD: usize = 998244353; // 119 * (1 << 23) + 1
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ModInt {

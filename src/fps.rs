@@ -9,13 +9,8 @@ use std::{fmt, ops};
 macro_rules! fps {
     { $( $x:expr ),* } => {
         {
-            use fuwari::fps::FPS;
-            use fuwari::modint::ModInt;
-            let mut coeff = vec![];
-            $(
-                 coeff.push(ModInt {val: $x as usize});
-            )*
-            FPS::new(coeff)
+            let coeff = vec![$(ModInt {val: $x as usize})*];
+            FPS { coeff }
         }
     };
 }
@@ -27,7 +22,7 @@ macro_rules! sfps {
         {
             use fuwari::fps::FPS;
             use fuwari::modint::ModInt;
-            let mut f = FPS::new(vec![]);
+            let mut f = fps![];
             $(
                 f.set($n as usize, ModInt {val: $a as usize});
             )*
@@ -85,30 +80,12 @@ impl FPS {
         self.truncate(self.len() - n);
     }
 
-    pub fn split(&self, n: usize) -> (Self, Self) {
-        if self.len() < n {
-            (self.clone(), FPS::new(vec![]))
-        } else {
-            (
-                FPS::new(self.coeff[..n].to_vec()),
-                FPS::new(self.coeff[n..].to_vec()),
-            )
-        }
-    }
-
     pub fn inv(&self, len: usize) -> Self {
         assert_ne!(self.get(0), ModInt { val: 0 });
 
         let mut g = FPS::new(vec![self.get(0).inv()]);
-
-        let mut d = 1;
-        loop {
-            if d >= len {
-                break;
-            }
-
-            let mut f = self.clone();
-            f.truncate(2 * d);
+        for d in (0..).map(|n| 1 << n).take_while(|&n| n < len) {
+            let mut f = FPS::new(self.coeff.iter().cloned().take(2 * d).collect::<Vec<_>>());
             f.coeff.resize(4 * d, ModInt { val: 0 });
             g.coeff.resize(4 * d, ModInt { val: 0 });
             ntt(&mut f.coeff);
@@ -118,11 +95,79 @@ impl FPS {
                 .zip(f.coeff.iter())
                 .for_each(|(g, f)| *g *= -*f * *g + ModInt { val: 2 });
             intt(&mut g.coeff);
-            g.truncate(2 * d);
+            g.coeff.truncate(2 * d);
             let four_d_inv = ModInt { val: 4 * d }.inv();
             g.coeff.iter_mut().for_each(|x| *x *= four_d_inv);
+        }
 
-            d *= 2;
+        g.truncate(len);
+        g
+    }
+
+    pub fn derivative(&self) -> Self {
+        FPS::new(
+            self.coeff
+                .iter()
+                .enumerate()
+                .skip(1)
+                .map(|(i, &x)| ModInt::new(i) * x)
+                .collect(),
+        )
+    }
+
+    pub fn integral(&self) -> Self {
+        if self.is_empty() {
+            self.clone()
+        } else {
+            let mut fact = vec![ModInt { val: 1 }];
+            for i in 1..=self.len() {
+                fact.push(fact[i - 1] * ModInt { val: i });
+            }
+            let mut ifact = vec![fact[self.len()].inv()];
+            for i in 0..self.len() {
+                ifact.push(
+                    ifact[i]
+                        * ModInt {
+                            val: self.len() - i,
+                        },
+                )
+            }
+            ifact.reverse();
+
+            FPS::new(
+                vec![ModInt::new(0)]
+                    .into_iter()
+                    .chain(
+                        self.coeff
+                            .iter()
+                            .enumerate()
+                            .map(|(i, &x)| x * ifact[i + 1] * fact[i]),
+                    )
+                    .collect(),
+            )
+        }
+    }
+
+    pub fn log(&self, len: usize) -> Self {
+        assert_eq!(self.get(0), ModInt { val: 1 });
+        let mut f = FPS::new(self.coeff.iter().cloned().take(len).collect::<Vec<_>>()).derivative();
+        let g = FPS::new(self.coeff.iter().cloned().take(len).collect::<Vec<_>>()).inv(len - 1);
+        f *= g;
+        f.truncate(len - 1);
+        f = f.integral();
+        f
+    }
+
+    pub fn exp(&self, len: usize) -> Self {
+        assert_eq!(self.get(0), ModInt { val: 0 });
+
+        let mut g = fps![1];
+        for d in (0..).map(|n| 1 << n).take_while(|&n| n < len) {
+            let mut f = FPS::new(self.coeff.iter().cloned().take(2 * d).collect::<Vec<_>>());
+            f -= g.log(2 * d);
+            f += fps![1];
+            g *= f;
+            g.coeff.truncate(2 * d);
         }
 
         g.truncate(len);
@@ -156,7 +201,7 @@ impl ops::Mul for FPS {
 impl ops::Neg for FPS {
     type Output = FPS;
     fn neg(self) -> Self {
-        FPS::new(vec![]) - self
+        fps![] - self
     }
 }
 

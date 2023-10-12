@@ -32,7 +32,7 @@ pub fn ntt(a: &mut Vec<ModInt>) {
                 *ar = l - r;
             }
             rot *= ModInt {
-                val: FFT_RATE[(!s).trailing_zeros() as usize],
+                val: FFT_RATE[s.trailing_ones() as usize],
             };
         }
     }
@@ -58,7 +58,7 @@ pub fn intt(a: &mut Vec<ModInt>) {
                 *ar = (l - r) * irot;
             }
             irot *= ModInt {
-                val: FFT_IRATE[(!s).trailing_zeros() as usize],
+                val: FFT_IRATE[s.trailing_ones() as usize],
             };
         }
     }
@@ -82,16 +82,20 @@ pub fn ntt_conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
 }
 
 pub fn naive_conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
-    let mut res = vec![ModInt { val: 0 }; a.len() + b.len() - 1];
-    for (i, y) in a.iter().enumerate() {
-        res.iter_mut()
-            .skip(i)
-            .take(b.len())
-            .zip(b.iter())
-            .for_each(|(x, z)| *x += *y * *z);
-    }
+    if a.is_empty() && b.is_empty() {
+        vec![]
+    } else {
+        let mut res = vec![ModInt { val: 0 }; a.len() + b.len() - 1];
+        for (i, y) in a.iter().enumerate() {
+            res.iter_mut()
+                .skip(i)
+                .take(b.len())
+                .zip(b.iter())
+                .for_each(|(x, z)| *x += *y * *z);
+        }
 
-    res
+        res
+    }
 }
 
 pub fn conv(a: &Vec<ModInt>, b: &Vec<ModInt>) -> Vec<ModInt> {
