@@ -1,8 +1,8 @@
 use std::{fmt, ops};
 
-const MOD: usize = 998244353; // 119 * (1 << 23) + 1
+pub const MOD: usize = 998244353; // 119 * (1 << 23) + 1
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ModInt {
     pub val: usize,
 }
@@ -85,6 +85,13 @@ impl ops::Div for ModInt {
     type Output = ModInt;
     fn div(self, other: Self) -> Self {
         self * other.inv()
+    }
+}
+
+impl ops::Neg for ModInt {
+    type Output = ModInt;
+    fn neg(self) -> Self::Output {
+        ModInt { val: 0 } - self
     }
 }
 
